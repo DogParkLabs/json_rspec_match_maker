@@ -17,7 +17,7 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
       json: ->(json) { json['name'] }
     },
     'association' => {
-      association: ->(instance) { instance.association },
+      each_with_index: ->(instance) { instance.association },
       attributes: {
         'id' => {
           instance: ->(instance) { instance.id },
