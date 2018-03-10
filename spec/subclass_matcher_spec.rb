@@ -1,4 +1,4 @@
-require_relative '../lib/json_rspec_match_maker'
+require 'spec_helper'
 
 Struct.new('Associated', :id, :description)
 test_associated = Struct::Associated.new(2, 'An associated record')
