@@ -90,34 +90,13 @@ Here is an example of a complete matcher class:
 ```ruby
 class AddressMatcher < JsonRspecMatchMaker::Base
   MATCH_DEF = {
-    'id' => {
-      instance: ->(instance) { instance.id },
-      json: ->(json) { json['id'] }
-    },
-    'description' => {
-      instance: ->(instance) { instance.description },
-      json: ->(json) { json['description'] }
-    },
-    'street_line_one' => {
-       instance: ->(instance) { instance.street_line_one },
-       json: ->(json) { json['address']['street_line_one'] }
-    },
-    'street_line_two' => {
-      instance: ->(instance) { instance.street_line_two },
-      json: ->(json) { json['address']['street_line_two'] }
-    },
-    'city' => {
-      instance: ->(instance) { instance.city },
-      json: ->(json) { json['address']['city'] }
-    },
-    'state' => {
-      instance: ->(instance) { instance.state.abbreviation },
-      json: ->(json) { json['address']['state'] }
-    },
-    'postal_code' => {
-      instance: ->(instance) { instance.postal_code },
-      json: ->(json) { json['address']['postal_code'] }
-    }
+    'id' => ->(instance) { instance.id },
+    'description' => ->(instance) { instance.description },
+    'street_line_one' => ->(instance) { instance.street_line_one },
+    'street_line_two' => ->(instance) { instance.street_line_two },
+    'city' => ->(instance) { instance.city },
+    'state' => ->(instance) { instance.state.abbreviation },
+    'postal_code' => ->(instance) { instance.postal_code },
   }.freeze
 
   def initialize(address)
@@ -142,10 +121,7 @@ class AddressMatcher < JsonRspecMatchMaker::Base
   
   def set_match_def(state_format)
     {
-      'state' => {
-        instance: ->(instance) { instance.state.formatted(state_format) },
-        json: ->(json) { json['address']['state'] }
-      }
+      'state' => ->(instance) { instance.state.formatted(state_format) }
     }.merge(MATCH_DEF)
   end
 end
@@ -158,14 +134,8 @@ Associations are defined very similarly to top level attributes:
   'answers' => {
     association: ->(instance) { instance.answers },
     attributes: {
-      'id' => {
-        instance: ->(instance) { instance.id },
-        json: ->(json, idx) { json['answers'][idx]['id'] }
-      },
-      'question' => {
-        instance: ->(instance) { instance.question.text },
-        json: ->(json, idx) { json['answers'][idx]['question'] }
-      }
+      'id' => ->(instance) { instance.id },
+      'question' => ->(instance) { instance.question.text },
     }
   }
 }
