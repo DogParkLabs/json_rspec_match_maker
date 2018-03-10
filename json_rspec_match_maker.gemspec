@@ -27,4 +27,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rubocop', '~> 0.52.1'
   spec.add_development_dependency 'yard', '~> 0.9.12'
   spec.add_development_dependency 'yardstick', '~> 0.9.9'
+  spec.add_development_dependency 'pry'
 end
