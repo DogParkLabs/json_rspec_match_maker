@@ -67,10 +67,10 @@ module JsonRspecMatchMaker
     def check_json_against_instance
       raise MatchDefinitionNotFound, self.class.name unless @match_definition
       @match_definition.each do |error_key, match_def|
-        if match_def[:association].present?
-          check_association(error_key, match_def)
-        else
+        if match_def[:association].nil?
           check_values(error_key, match_def)
+        else
+          check_association(error_key, match_def)
         end
       end
     end
@@ -106,7 +106,7 @@ module JsonRspecMatchMaker
     # @return [String] the error message
     def add_error(field, instance_value, json_value)
       @errors[field] =
-        "Mismatch in field #{field}: expected (#{instance_value}), got: #{json_value}"
+        "Mismatch in field #{field}: expected (#{instance_value}), got: (#{json_value})"
     end
   end
 end
