@@ -1,28 +1,176 @@
 # JsonRspecMatchMaker
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/json_rspec_match_maker`. To experiment with that code, run `bin/console` for an interactive prompt.
+Write RSpec matchers for JSON api endpoints using a simple data structure.
+DRY up API expectations, without losing the specificity sacrificed by a
+schema-based approach to JSON expectations.
 
-TODO: Delete this and the text above, and describe your gem
-
-## Installation
+## Installation with Rails
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'json_rspec_match_maker'
+gem 'json_rspec_match_maker', require: false
 ```
 
 And then execute:
 
     $ bundle
+    
+Update your `rails_helper.rb` with:
 
-Or install it yourself as:
+```ruby
+# require the gem
+require 'json_rspec_match_maker'
 
-    $ gem install json_rspec_match_maker
+# require your custom matchers you'll be writing
+Dir[Rails.root.join('spec/support/matchers/json_matchers/**/*.rb')].each do |f|
+  require f
+end
+```
 
 ## Usage
 
-TODO: Write usage instructions here
+Create a new matcher that interhits from the base class:
+
+```ruby
+class AddressMatcher < JsonRspecMatchMaker::Base
+end
+```
+
+A child class just needs to define and set the `@match_definition` 
+
+```ruby
+class AddressMatcher < JsonRspecMatchMaker::Base
+  def initialize(address)
+    @match_definition = set_match_def
+    super
+  end
+end
+```
+
+Matchers need to be wrapped in a module we can include in our specs:
+
+```ruby
+module JsonMatchers
+  class AddressMatcher < JsonRspecMatchMaker::Base
+    ...
+  end
+end
+```
+
+That module defines our match method:
+
+```ruby
+module JsonMatchers
+  # class defined up here...
+  
+  def be_valid_json_for_address(address)
+    AddressMatcher.new(address)
+  end
+end
+```
+
+Which we can then use in RSpec like:
+
+```ruby
+RSpec.describe 'Address serialization' do
+  include JsonMatchers
+
+  let(:address) { Address.new }
+  let(:address_json) { address.to_json }
+  
+  it 'serializes the address' do
+    expect(address_json).to be_valid_json_for_address(address)
+  end
+end
+```
+
+Here is an example of a complete matcher class:
+
+```ruby
+class AddressMatcher < JsonRspecMatchMaker::Base
+  MATCH_DEF = {
+    'id' => {
+      instance: ->(instance) { instance.id },
+      json: ->(json) { json['id'] }
+    },
+    'description' => {
+      instance: ->(instance) { instance.description },
+      json: ->(json) { json['description'] }
+    },
+    'street_line_one' => {
+       instance: ->(instance) { instance.street_line_one },
+       json: ->(json) { json['address']['street_line_one'] }
+    },
+    'street_line_two' => {
+      instance: ->(instance) { instance.street_line_two },
+      json: ->(json) { json['address']['street_line_two'] }
+    },
+    'city' => {
+      instance: ->(instance) { instance.city },
+      json: ->(json) { json['address']['city'] }
+    },
+    'state' => {
+      instance: ->(instance) { instance.state.abbreviation },
+      json: ->(json) { json['address']['state'] }
+    },
+    'postal_code' => {
+      instance: ->(instance) { instance.postal_code },
+      json: ->(json) { json['address']['postal_code'] }
+    }
+  }.freeze
+
+  def initialize(address)
+    @match_definition = MATCH_DEF
+    super
+  end
+end
+```
+
+In that cause, our expectations are static so we can define the match definition
+as a constant.
+
+In other cases, we might want our matchers to be more dynamic so we could do
+something like:
+
+```ruby
+class AddressMatcher < JsonRspecMatchMaker::Base
+  def initialize(address, state_format)
+    @match_definition = set_match_def(state_format)
+    super(address)
+  end
+  
+  def set_match_def(state_format)
+    {
+      'state' => {
+        instance: ->(instance) { instance.state.formatted(state_format) },
+        json: ->(json) { json['address']['state'] }
+      }
+    }.merge(MATCH_DEF)
+  end
+end
+```
+
+Associations are defined very similarly to top level attributes:
+
+```ruby
+{
+  'answers' => {
+    association: ->(instance) { instance.answers },
+    attributes: {
+      'id' => {
+        instance: ->(instance) { instance.id },
+        json: ->(json, idx) { json['answers'][idx]['id'] }
+      },
+      'question' => {
+        instance: ->(instance) { instance.question.text },
+        json: ->(json, idx) { json['answers'][idx]['question'] }
+      }
+    }
+  }
+}
+```
+
 
 ## Development
 
