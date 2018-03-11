@@ -249,8 +249,8 @@ Arrays are defined very similary to single objects:
   'answers' => {
     each: ->(instance) { instance.answers },
     attributes: {
-      'id' => ->(instance) { instance.id },
-      'question' => ->(instance) { instance.question.text },
+      'id' => ->(answer) { answer.id },
+      'question' => ->(answer) { answer.question.text },
     }
   }
 }
