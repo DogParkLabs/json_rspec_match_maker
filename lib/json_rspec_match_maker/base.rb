@@ -129,8 +129,13 @@ module JsonRspecMatchMaker
     # @api private
     # @return [String] the error message
     def add_error(field, expected_value, target_value)
-      @errors[field] =
-        "Mismatch in field #{field}: expected (#{expected_value}), got: (#{target_value})"
+      @errors[field] = <<-MSG
+
+        Mismatch in field: '#{field}'
+          expected: '#{expected_value}'
+          received: '#{target_value}'
+
+      MSG
     end
   end
 end

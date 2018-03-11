@@ -94,8 +94,15 @@ RSpec.describe 'Subclass Matcher' do
     it 'returns false for mismatching json' do
       expect(matcher.matches?(mismatching_json_single)).to eq false
 
+      # rubocop:disable Layout/EmptyLinesAroundArguments
       expect(matcher.failure_message).to(
-        eq 'Mismatch in field name: expected (John Johnson), got: (John Johnson )'
+        eq <<-MSG
+
+        Mismatch in field: 'name'
+          expected: 'John Johnson'
+          received: 'John Johnson '
+
+        MSG
       )
     end
 
@@ -105,8 +112,15 @@ RSpec.describe 'Subclass Matcher' do
       field_name = 'many_association[0].description'
       description = 'An associated record in a list'
       expect(matcher.failure_message).to(
-        eq "Mismatch in field #{field_name}: expected (#{description}), got: (Nonsense)"
+        eq <<-MSG
+
+        Mismatch in field: '#{field_name}'
+          expected: '#{description}'
+          received: 'Nonsense'
+
+        MSG
       )
+      # rubocop:enable Layout/EmptyLinesAroundArguments
     end
   end
 end

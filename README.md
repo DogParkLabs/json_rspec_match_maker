@@ -4,6 +4,10 @@ Write RSpec matchers for JSON api endpoints using a simple data structure.
 DRY up API expectations, without losing the specificity sacrificed by a
 schema-based approach to JSON expectations.
 
+## Why?
+
+
+
 ## Installation with Rails
 
 Add this line to your application's Gemfile:
