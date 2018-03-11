@@ -87,14 +87,14 @@ like for the same case:
 
 ```ruby
 {
-  'user.auth_token' => ->(user) { user.auth_token },
-  'user.created_at' => ->(user) { user.created_at },
-  'user.email' => ->(user) { user.email },
-  'user.first_name' => ->(user) { user.first_name },
-  'user.id' => ->(user) { user.id },
-  'user.last_name' => ->(user) { user.last_name }
+  'user.auth_token' =>   ->(user) { user.auth_token },
+  'user.created_at' =>   ->(user) { user.created_at },
+  'user.email' =>        ->(user) { user.email },
+  'user.first_name' =>   ->(user) { user.first_name },
+  'user.id' =>           ->(user) { user.id },
+  'user.last_name' =>    ->(user) { user.last_name }
   'user.phone_number' => ->(user) { user.phone_number },
-  'user.updated_at' => ->(user) { user.updated_at }
+  'user.updated_at' =>   ->(user) { user.updated_at }
 }
 ```
 
