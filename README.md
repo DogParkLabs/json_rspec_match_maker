@@ -6,7 +6,118 @@ schema-based approach to JSON expectations.
 
 ## Why?
 
+As pointed out by Thoughbot in their blog post [Validating JSON Schemas with an
+RSpec
+Matcher](https://robots.thoughtbot.com/validating-json-schemas-with-an-rspec-matcher)
+the naive pattern for writing request specs for a JSON API in rails tends to
+look something like:
 
+```ruby
+describe "Fetching the current user" do
+  context "with valid auth token" do
+    it "returns the current user" do
+      user = create(:user)
+      auth_header = { "Auth-Token" => user.auth_token }
+
+      get v1_current_user_url, {}, auth_header
+
+      current_user = response_body["user"]
+      expect(response.status).to eq 200
+      expect(current_user["auth_token"]).to eq user.auth_token
+      expect(current_user["email"]).to eq user.email
+      expect(current_user["first_name"]).to eq user.first_name
+      expect(current_user["last_name"]).to eq user.last_name
+      expect(current_user["id"]).to eq user.id
+      expect(current_user["phone_number"]).to eq user.phone_number
+    end
+  end
+
+  def response_body
+    JSON.parse(response.body)
+  end
+end
+```
+
+Tedious to write and just as tedious to read.
+
+In that post, they talk about one alternative for making tests around JSON
+better - JSON Schema. This is an interesting approach, but I'd like to be more
+specific about my specs than validating that the shape of the data and the types
+of the values are correct.
+
+However, I do like the way that the JSON schema is written because it is very
+similar to the JSON that's generated. So that's the goal - enable writing spec
+matchers similar to a JSON schema definition but with greater specificity about values.
+
+I think this gem accomplishes that. As an example, here is a JSON Schema
+defintion (also pulled from the Thoughbot blog post)
+
+```json
+{
+  "type": "object",
+  "required": ["user"],
+  "properties": {
+    "user" : {
+      "type" : "object",
+      "required" : [
+        "auth_token",
+        "email",
+        "first_name",
+        "id",
+        "last_name",
+        "phone_number"
+      ],
+      "properties" : {
+        "auth_token" : { "type" : "string" },
+        "created_at" : { "type" : "string", "format": "date-time" },
+        "email" : { "type" : "string" },
+        "first_name" : { "type" : "string" },
+        "id" : { "type" : "integer" },
+        "last_name" : { "type" : "string" },
+        "phone_number" : { "type" : "string" },
+        "updated_at" : { "type" : "string", "format": "date-time" }
+      }
+    }
+  }
+}
+```
+
+And here is what the interesting bits of a matcher using this gem would look
+like for the same case:
+
+```ruby
+{
+  'user.auth_token' => ->(user) { user.auth_token },
+  'user.created_at' => ->(user) { user.created_at },
+  'user.email' => ->(user) { user.email },
+  'user.first_name' => ->(user) { user.first_name },
+  'user.id' => ->(user) { user.id },
+  'user.last_name' => ->(user) { user.last_name }
+  'user.phone_number' => ->(user) { user.phone_number },
+  'user.updated_at' => ->(user) { user.updated_at }
+}
+```
+
+Then that matcher can be used to make your specs:
+
+```ruby
+describe "Fetching the current user" do
+  context "with valid auth token" do
+    it "returns the current user" do
+      user = create(:user)
+      auth_header = { "Auth-Token" => user.auth_token }
+
+      get v1_current_user_url, {}, auth_header
+
+      expect(response_body).to be_valid_json_for_user(user)
+    end
+  end
+
+  def response_body
+    JSON.parse(response.body)
+  end
+end
+```
 
 ## Installation with Rails
 
