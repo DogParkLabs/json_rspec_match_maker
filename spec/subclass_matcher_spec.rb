@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 Struct.new('SingleAssociated', :id, :type)
 test_single_associated = Struct::SingleAssociated.new(3, :foo)
 

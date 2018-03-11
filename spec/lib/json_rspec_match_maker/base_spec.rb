@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 RSpec.describe JsonRspecMatchMaker::Base do
   Struct.new('Example', :id, :name, :description)
 
