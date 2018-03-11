@@ -242,12 +242,12 @@ class AddressMatcher < JsonRspecMatchMaker::Base
 end
 ```
 
-Associations are defined very similarly to top level attributes:
+Arrays are defined very similary to single objects:
 
 ```ruby
 {
   'answers' => {
-    association: ->(instance) { instance.answers },
+    each: ->(instance) { instance.answers },
     attributes: {
       'id' => ->(instance) { instance.id },
       'question' => ->(instance) { instance.question.text },
