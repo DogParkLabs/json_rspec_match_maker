@@ -109,31 +109,20 @@ module JsonRspecMatchMaker
     # the index if iterating through a list, otherwise nil
     # @return [nil] returns nothing, adds to error list as side effect
     def check_values(error_key, match_function, expected_instance = expected, each_opts = nil)
-      expected_value = match_function.call(expected_instance)
-      if each_opts.nil?
-        target_value = value_for_key(error_key, target)
-      else
-        targets = value_for_key(error_key, target)
-        specific_target = targets[each_opts[:idx]]
-        target_value = value_for_key(each_opts[:error_key], specific_target)
-        error_key = "#{error_key}[#{each_opts[:idx]}].#{each_opts[:error_key]}"
-      end
-      add_error(error_key, expected_value, target_value) if expected_value != target_value
-    end
-
-    def value_for_key(key, json)
-      key.split('.').reduce(json) { |j, k| j[k] }
+      expected_value = ExpectedValue.new(match_function, expected_instance)
+      target_value = TargetValue.new(error_key, each_opts, target)
+      add_error(expected_value, target_value) unless expected_value == target_value
     end
 
     # Adds an erorr to the list when a mismatch is detected
     # @api private
     # @return [String] the error message
-    def add_error(field, expected_value, target_value)
-      @errors[field] = <<-MSG
+    def add_error(expected_value, target_value)
+      @errors[target_value.error_key] = <<-MSG
 
-        Mismatch in field: '#{field}'
-          expected: '#{expected_value}'
-          received: '#{target_value}'
+        Mismatch in field: '#{target_value.error_key}'
+          expected: '#{expected_value.value}'
+          received: '#{target_value.value}'
 
       MSG
     end

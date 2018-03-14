@@ -13,7 +13,9 @@ RSpec.describe JsonRspecMatchMaker::Base do
 
   describe '#matches?' do
     it 'raises an error if no @match_definition is set' do
-      expect { matcher.matches?(target) }.to raise_error JsonRspecMatchMaker::MatchDefinitionNotFound
+      expect { matcher.matches?(target) }.to(
+        raise_error JsonRspecMatchMaker::MatchDefinitionNotFound
+      )
     end
   end
 
