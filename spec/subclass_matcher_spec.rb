@@ -28,6 +28,7 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
   MATCH_DEF = {
     'id' => ->(instance) { instance.id },
     'name' => ->(instance) { instance.full_name },
+    'non.existant.nested.key.value' => ->(_) { nil },
     'single_association.id' => ->(instance) { instance.single_association.id },
     'single_association.type' => ->(instance) { instance.single_association.type },
     'many_association' => {

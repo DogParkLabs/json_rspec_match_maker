@@ -23,7 +23,8 @@ module JsonRspecMatchMaker
     end
 
     def value_for_key(key, json)
-      key.split('.').reduce(json) { |j, k| j[k] }
+      value = key.split('.').reduce(json) { |j, k| j.fetch(k, {}) }
+      value == {} ? nil : value
     end
 
     def ==(other)
