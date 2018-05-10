@@ -1,9 +1,9 @@
 Struct.new('SingleAssociated', :id, :type)
 test_single_associated = Struct::SingleAssociated.new(3, :foo)
 
-Struct.new('ManyAssociated', :id, :description, :something_else)
+Struct.new('ManyAssociated', :id, :description, :something_else, :more_things)
 test_many_associated = Struct::ManyAssociated.new(
-  2, 'An associated record in a list', test_single_associated
+  2, 'An associated record in a list', test_single_associated, [test_single_associated]
 )
 
 class TestInstance
@@ -37,7 +37,14 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
         'id' => ->(each_instance) { each_instance.id },
         'description' => ->(each_instance) { each_instance.description },
         'something_else.id' => ->(each_instance) { each_instance.something_else.id },
-        'something_else.type' => ->(each_instance) { each_instance.something_else.type }
+        'something_else.type' => ->(each_instance) { each_instance.something_else.type },
+        'more_things' => {
+          each: ->(each_instance) { each_instance.more_things },
+          attributes: {
+            'id' => ->(thing) { thing. id },
+            'type' => ->(thing) { thing.type }
+          }
+        }
       }
     }
   }.freeze
@@ -67,7 +74,13 @@ RSpec.describe 'Subclass Matcher' do
           'something_else' => {
             'id' => test_single_associated.id,
             'type' => test_single_associated.type
-          }
+          },
+          'more_things' => [
+            {
+              'id' => test_single_associated.id,
+              'type' => test_single_associated.type
+            }
+          ]
         }
       ]
     }
