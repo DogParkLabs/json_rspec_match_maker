@@ -121,7 +121,7 @@ RSpec.describe 'Subclass Matcher' do
     it 'returns error messages for each errors' do
       expect(matcher.matches?(mismatching_json_many)).to eq false
 
-      field_name = 'many_association[0].description'
+      field_name = 'many_association.0.description'
       description = 'An associated record in a list'
       expect(matcher.failure_message).to(
         eq <<-MSG

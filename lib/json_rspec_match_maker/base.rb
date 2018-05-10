@@ -66,11 +66,16 @@ module JsonRspecMatchMaker
     # @return [nil] returns nothing, adds to error list as side effect
     def check_target_against_expected
       raise MatchDefinitionNotFound, self.class.name unless @match_definition
-      @match_definition.each do |error_key, match_def|
+      check_definition(@match_definition)
+    end
+
+    def check_definition(definition, current_expected = expected, current_key = nil)
+      definition.each do |error_key, match_def|
+        key = [current_key, error_key].compact.join('.')
         if match_def.respond_to? :call
-          check_values(error_key, match_def)
+          check_values(key, match_def, current_expected)
         else
-          check_each(error_key, match_def)
+          check_each(key, match_def, current_expected)
         end
       end
     end
@@ -84,13 +89,11 @@ module JsonRspecMatchMaker
     #   :each is a function that returns the list of items
     #   :attributes is a hash with the same structure as the top-level match_def hash
     # @return [nil] returns nothing, adds to error list as side effect
-    def check_each(error_key, each_definition)
-      enumerable = each_definition[:each].call(expected)
+    def check_each(error_key, each_definition, current_expected)
+      enumerable = each_definition[:each].call(current_expected)
       enumerable.each_with_index do |each_instance, idx|
-        each_definition[:attributes].each do |attr_error_key, match_function|
-          each_opts = { idx: idx, error_key: attr_error_key }
-          check_values(error_key, match_function, each_instance, each_opts)
-        end
+        full_key = [error_key, idx].join('.')
+        check_definition(each_definition[:attributes], each_instance, full_key)
       end
     end
 
@@ -108,9 +111,9 @@ module JsonRspecMatchMaker
     #    :error_key the subfield reported in the error
     # the index if iterating through a list, otherwise nil
     # @return [nil] returns nothing, adds to error list as side effect
-    def check_values(error_key, match_function, expected_instance = expected, each_opts = nil)
+    def check_values(error_key, match_function, expected_instance = expected)
       expected_value = ExpectedValue.new(match_function, expected_instance)
-      target_value = TargetValue.new(error_key, each_opts, target)
+      target_value = TargetValue.new(error_key, target)
       add_error(expected_value, target_value) unless expected_value == target_value
     end
 
