@@ -1,9 +1,9 @@
 Struct.new('SingleAssociated', :id, :type)
 test_single_associated = Struct::SingleAssociated.new(3, :foo)
 
-Struct.new('ManyAssociated', :id, :description, :something_else)
+Struct.new('ManyAssociated', :id, :description, :something_else, :more_things)
 test_many_associated = Struct::ManyAssociated.new(
-  2, 'An associated record in a list', test_single_associated
+  2, 'An associated record in a list', test_single_associated, [test_single_associated]
 )
 
 class TestInstance
@@ -37,7 +37,14 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
         'id' => ->(each_instance) { each_instance.id },
         'description' => ->(each_instance) { each_instance.description },
         'something_else.id' => ->(each_instance) { each_instance.something_else.id },
-        'something_else.type' => ->(each_instance) { each_instance.something_else.type }
+        'something_else.type' => ->(each_instance) { each_instance.something_else.type },
+        'more_things' => {
+          each: ->(each_instance) { each_instance.more_things },
+          attributes: {
+            'id' => ->(thing) { thing. id },
+            'type' => ->(thing) { thing.type }
+          }
+        }
       }
     }
   }.freeze
@@ -67,7 +74,13 @@ RSpec.describe 'Subclass Matcher' do
           'something_else' => {
             'id' => test_single_associated.id,
             'type' => test_single_associated.type
-          }
+          },
+          'more_things' => [
+            {
+              'id' => test_single_associated.id,
+              'type' => test_single_associated.type
+            }
+          ]
         }
       ]
     }
@@ -82,6 +95,12 @@ RSpec.describe 'Subclass Matcher' do
   let(:mismatching_json_many) do
     matching_json.dup.tap do |json|
       json['many_association'][0]['description'] = 'Nonsense'
+    end
+  end
+
+  let(:mismatching_json_many_nested) do
+    matching_json.dup.tap do |json|
+      json['many_association'][0]['more_things'][0]['type'] = 'Nonsense'
     end
   end
 
@@ -108,7 +127,7 @@ RSpec.describe 'Subclass Matcher' do
     it 'returns error messages for each errors' do
       expect(matcher.matches?(mismatching_json_many)).to eq false
 
-      field_name = 'many_association[0].description'
+      field_name = 'many_association.0.description'
       description = 'An associated record in a list'
       expect(matcher.failure_message).to(
         eq <<-MSG
@@ -119,8 +138,24 @@ RSpec.describe 'Subclass Matcher' do
 
         MSG
       )
-      # rubocop:enable Layout/EmptyLinesAroundArguments
     end
+
+    it 'returns error messages for deeply nested each errors' do
+      expect(matcher.matches?(mismatching_json_many_nested)).to eq false
+
+      field_name = 'many_association.0.more_things.0.type'
+      type = 'foo'
+      expect(matcher.failure_message).to(
+        eq <<-MSG
+
+        Mismatch in field: '#{field_name}'
+          expected: '#{type}'
+          received: 'Nonsense'
+
+        MSG
+      )
+    end
+    # rubocop:enable Layout/EmptyLinesAroundArguments
   end
 end
 # rubocop:enable Metrics/BlockLength
