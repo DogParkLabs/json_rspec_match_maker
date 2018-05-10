@@ -98,6 +98,12 @@ RSpec.describe 'Subclass Matcher' do
     end
   end
 
+  let(:mismatching_json_many_nested) do
+    matching_json.dup.tap do |json|
+      json['many_association'][0]['more_things'][0]['type'] = 'Nonsense'
+    end
+  end
+
   describe 'matches?' do
     it 'returns true for matching json' do
       expect(matcher.matches?(matching_json)).to eq true
@@ -132,8 +138,24 @@ RSpec.describe 'Subclass Matcher' do
 
         MSG
       )
-      # rubocop:enable Layout/EmptyLinesAroundArguments
     end
+
+    it 'returns error messages for deeply nested each errors' do
+      expect(matcher.matches?(mismatching_json_many_nested)).to eq false
+
+      field_name = 'many_association.0.more_things.0.type'
+      type = 'foo'
+      expect(matcher.failure_message).to(
+        eq <<-MSG
+
+        Mismatch in field: '#{field_name}'
+          expected: '#{type}'
+          received: 'Nonsense'
+
+        MSG
+      )
+    end
+    # rubocop:enable Layout/EmptyLinesAroundArguments
   end
 end
 # rubocop:enable Metrics/BlockLength
