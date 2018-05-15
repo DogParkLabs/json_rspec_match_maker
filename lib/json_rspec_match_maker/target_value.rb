@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JsonRspecMatchMaker
   # Handles fetching the target value from the target object
   class TargetValue

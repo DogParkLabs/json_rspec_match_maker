@@ -1,3 +1,6 @@
+# frozen_string_literal: true
+# rubocop:disable Metrics/BlockLength
+
 Struct.new('SingleAssociated', :id, :type)
 test_single_associated = Struct::SingleAssociated.new(3, :foo)
 
@@ -25,11 +28,11 @@ test_instance =
   TestInstance.new(1, 'John', 'Johnson', test_many_associated, test_single_associated)
 
 class ExampleMatcher < JsonRspecMatchMaker::Base
-  MATCH_DEF = {
+  COMPLEX_MATCH_DEF = {
     'id' => ->(instance) { instance.id },
     'name' => ->(instance) { instance.full_name },
     'non.existant.nested.key.value' => ->(_) { nil },
-    'single_association.id' => ->(instance) { instance.single_association.id },
+    'single_association.id' => :default,
     'single_association.type' => ->(instance) { instance.single_association.type },
     'many_association' => {
       each: ->(instance) { instance.many_association },
@@ -49,14 +52,39 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
     }
   }.freeze
 
-  def initialize(instance)
-    super(instance, MATCH_DEF)
-  end
+  SIMPLE_MATCH_DEF = [
+    'id',
+    { 'name' => ->(instance) { instance.full_name } },
+    'non.existant.key.value',
+    'single_association.id',
+    'single_association.type',
+    {
+      'many_association' => {
+        each: ->(instance) { instance.many_association },
+        attributes: [
+          'id',
+          'description',
+          'something_else.id',
+          'something_else.type',
+          'more_things' => {
+            each: ->(instance) { instance.more_things },
+            attributes: %w[
+              id
+              type
+            ]
+          }
+        ]
+      }
+    }
+  ].freeze
 end
 
-# rubocop:disable Metrics/BlockLength
-RSpec.describe 'Subclass Matcher' do
-  let(:matcher) { ExampleMatcher.new(test_instance) }
+RSpec.shared_examples 'json matcher' do |type|
+  if type == :simple
+    let(:matcher) { ExampleMatcher.new(test_instance, ExampleMatcher::SIMPLE_MATCH_DEF) }
+  else
+    let(:matcher) { ExampleMatcher.new(test_instance, ExampleMatcher::COMPLEX_MATCH_DEF) }
+  end
 
   let(:matching_json) do
     {
@@ -158,3 +186,15 @@ RSpec.describe 'Subclass Matcher' do
   end
 end
 # rubocop:enable Metrics/BlockLength
+
+RSpec.describe 'Subclass Matcher' do
+  context 'complex' do
+    describe 'complex match definition' do
+      it_behaves_like 'json matcher', :complex
+    end
+  end
+
+  describe 'simple match definition' do
+    it_behaves_like 'json matcher', :simple
+  end
+end

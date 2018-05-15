@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JsonRspecMatchMaker
   # Base class that abstracts away all of the work of using the @match_definition
   class Base
@@ -24,7 +26,7 @@ module JsonRspecMatchMaker
     #   JsonRspecMatchMaker.new(presenter_instance)
     def initialize(expected, match_definition)
       @expected = expected
-      @match_definition = match_definition
+      @match_definition = expand_definition(match_definition)
       @errors = {}
     end
 
@@ -51,6 +53,28 @@ module JsonRspecMatchMaker
 
     private
 
+    # expands simple arrays into full hash definitions
+    # @api private
+    def expand_definition(definition)
+      return definition if definition.is_a? Hash
+      definition.each_with_object({}) do |key, result|
+        if key.is_a? String
+          result[key] = :default
+        elsif key.is_a? Hash
+          result.merge!(expand_sub_definition(key))
+        end
+      end
+    end
+
+    # expands nested simple definition into a full hash
+    # @api private
+    def expand_sub_definition(sub_definition)
+      subkey = sub_definition.keys.first
+      return sub_definition if sub_definition[subkey].respond_to? :call
+      sub_definition[subkey][:attributes] = expand_definition(sub_definition[subkey][:attributes])
+      sub_definition
+    end
+
     # Walks through the match definition, collecting errors for each field
     # @api private
     # @raise [MatchDefinitionNotFound] if child class does not set @match_definition
@@ -61,11 +85,11 @@ module JsonRspecMatchMaker
 
     def check_definition(definition, current_expected, current_key = nil)
       definition.each do |error_key, match_def|
-        key = [current_key, error_key].compact.join('.')
         if match_def.is_a? Hash
+          key = [current_key, error_key].compact.join('.')
           check_each(key, match_def, current_expected)
         else
-          check_values(key, match_def, current_expected)
+          check_values(current_key, error_key, match_def, current_expected)
         end
       end
     end
@@ -101,9 +125,9 @@ module JsonRspecMatchMaker
     #    :error_key the subfield reported in the error
     # the index if iterating through a list, otherwise nil
     # @return [nil] returns nothing, adds to error list as side effect
-    def check_values(error_key, match_function, expected_instance = expected)
-      expected_value = ExpectedValue.new(match_function, expected_instance)
-      target_value = TargetValue.new(error_key, target)
+    def check_values(key_prefix, error_key, match_function, expected_instance = expected)
+      expected_value = ExpectedValue.new(match_function, expected_instance, error_key)
+      target_value = TargetValue.new([key_prefix, error_key].compact.join('.'), target)
       add_error(expected_value, target_value) unless expected_value == target_value
     end
 

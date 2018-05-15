@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe JsonRspecMatchMaker::Base do
   Struct.new('Example', :id, :name, :description)
 
