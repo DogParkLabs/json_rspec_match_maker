@@ -24,10 +24,11 @@ module JsonRspecMatchMaker
     # @example
     #   JsonRspecMatchMaker.new(active_record_model)
     #   JsonRspecMatchMaker.new(presenter_instance)
-    def initialize(expected, match_definition)
+    def initialize(expected, match_definition, prefix: '')
       @expected = expected
       @match_definition = expand_definition(match_definition)
       @errors = {}
+      @prefix = prefix
     end
 
     # Match method called by RSpec
@@ -126,7 +127,7 @@ module JsonRspecMatchMaker
     # the index if iterating through a list, otherwise nil
     # @return [nil] returns nothing, adds to error list as side effect
     def check_values(key_prefix, error_key, match_function, expected_instance = expected)
-      expected_value = ExpectedValue.new(match_function, expected_instance, error_key)
+      expected_value = ExpectedValue.new(match_function, expected_instance, error_key, @prefix)
       target_value = TargetValue.new([key_prefix, error_key].compact.join('.'), target)
       add_error(expected_value, target_value) unless expected_value == target_value
     end
