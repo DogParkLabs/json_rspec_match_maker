@@ -62,10 +62,10 @@ module JsonRspecMatchMaker
     def check_definition(definition, current_expected, current_key = nil)
       definition.each do |error_key, match_def|
         key = [current_key, error_key].compact.join('.')
-        if match_def.respond_to? :call
-          check_values(key, match_def, current_expected)
-        else
+        if match_def.is_a? Hash
           check_each(key, match_def, current_expected)
+        else
+          check_values(key, match_def, current_expected)
         end
       end
     end
