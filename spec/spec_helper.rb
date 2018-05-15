@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'json_rspec_match_maker'
 
 RSpec.configure do |config|
