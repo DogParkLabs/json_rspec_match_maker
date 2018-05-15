@@ -2,20 +2,13 @@ RSpec.describe JsonRspecMatchMaker::Base do
   Struct.new('Example', :id, :name, :description)
 
   let(:expected) { Struct::Example.new(1, 'test', 'a test object') }
-  let(:matcher) { JsonRspecMatchMaker::Base.new(expected) }
+  let(:match) { { 'id' => ->(thing) { thing.id } } }
+  let(:matcher) { JsonRspecMatchMaker::Base.new(expected, match) }
   let(:target) { { id: 1, name: 'test', description: 'a test object' } }
 
   describe '#initialize' do
     it 'is initialized with the instance being expected against' do
       expect(matcher.expected).to eq expected
-    end
-  end
-
-  describe '#matches?' do
-    it 'raises an error if no @match_definition is set' do
-      expect { matcher.matches?(target) }.to(
-        raise_error JsonRspecMatchMaker::MatchDefinitionNotFound
-      )
     end
   end
 

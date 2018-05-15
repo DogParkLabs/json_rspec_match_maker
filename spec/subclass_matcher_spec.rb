@@ -50,8 +50,7 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
   }.freeze
 
   def initialize(instance)
-    @match_definition = MATCH_DEF.dup
-    super
+    super(instance, MATCH_DEF)
   end
 end
 

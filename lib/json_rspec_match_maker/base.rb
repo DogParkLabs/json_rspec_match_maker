@@ -1,14 +1,4 @@
 module JsonRspecMatchMaker
-  # Error raised when the child class has failed to set @match_definition
-  # @api private
-  class MatchDefinitionNotFound < StandardError
-    # Create an error message for a child class
-    # @param class_name [String] the name of the matcher class
-    def initialize(class_name)
-      super("Expected instance variable @match_defintion to be set for #{class_name}")
-    end
-  end
-
   # Base class that abstracts away all of the work of using the @match_definition
   class Base
     # The object being expected against
@@ -32,8 +22,9 @@ module JsonRspecMatchMaker
     # @example
     #   JsonRspecMatchMaker.new(active_record_model)
     #   JsonRspecMatchMaker.new(presenter_instance)
-    def initialize(expected)
+    def initialize(expected, match_definition)
       @expected = expected
+      @match_definition = match_definition
       @errors = {}
     end
 
@@ -65,11 +56,10 @@ module JsonRspecMatchMaker
     # @raise [MatchDefinitionNotFound] if child class does not set @match_definition
     # @return [nil] returns nothing, adds to error list as side effect
     def check_target_against_expected
-      raise MatchDefinitionNotFound, self.class.name unless @match_definition
-      check_definition(@match_definition)
+      check_definition(@match_definition, expected)
     end
 
-    def check_definition(definition, current_expected = expected, current_key = nil)
+    def check_definition(definition, current_expected, current_key = nil)
       definition.each do |error_key, match_def|
         key = [current_key, error_key].compact.join('.')
         if match_def.respond_to? :call
