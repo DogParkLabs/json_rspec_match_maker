@@ -32,8 +32,8 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
     'testy.id' => ->(instance) { instance.id },
     'name' => ->(instance) { instance.full_name },
     'non.existant.nested.key.value' => ->(_) { nil },
-    'single_association.id' => :default,
-    'single_association.type' => ->(instance) { instance.single_association.type },
+    'single_association_attributes.id' => :default,
+    'single_association_attributes.type' => ->(instance) { instance.single_association.type },
     'many_association' => {
       each: ->(instance) { instance.many_association },
       attributes: {
@@ -56,8 +56,8 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
     'testy.id',
     { 'name' => ->(instance) { instance.full_name } },
     'non.existant.key.value',
-    'single_association.id',
-    'single_association.type',
+    'single_association_attributes.id',
+    'single_association_attributes.type',
     {
       'many_association' => {
         each: ->(instance) { instance.many_association },
@@ -94,7 +94,7 @@ RSpec.shared_examples 'json matcher' do |type|
     {
       'testy' => { 'id' => test_instance.id },
       'name' => test_instance.full_name,
-      'single_association' => {
+      'single_association_attributes' => {
         'id' => test_single_associated.id,
         'type' => test_single_associated.type
       },

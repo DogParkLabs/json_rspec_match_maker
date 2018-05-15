@@ -18,6 +18,7 @@ module JsonRspecMatchMaker
     def fetch_expected_value(instance, function, key, prefix)
       if function == :default
         key.split('.').inject(instance) do |expected, method_name|
+          method_name = method_name.chomp('_attributes')
           method_name == prefix ? expected : expected&.send(method_name)
         rescue NoMethodError
           nil
