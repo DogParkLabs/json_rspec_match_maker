@@ -4,8 +4,8 @@ module JsonRspecMatchMaker
   # Handles fetching the expected value from the expected instance
   class ExpectedValue
     attr_reader :value
-    def initialize(match_function, expected_instance, error_key)
-      @value = fetch_expected_value(expected_instance, match_function, error_key)
+    def initialize(match_function, expected_instance, error_key, prefix)
+      @value = fetch_expected_value(expected_instance, match_function, error_key, prefix)
     end
 
     def ==(other)
@@ -15,10 +15,10 @@ module JsonRspecMatchMaker
 
     private
 
-    def fetch_expected_value(instance, function, key)
+    def fetch_expected_value(instance, function, key, prefix)
       if function == :default
-        key.split('.').inject(instance) do |expected, k|
-          expected&.send k
+        key.split('.').inject(instance) do |expected, method_name|
+          method_name == prefix ? expected : expected&.send(method_name)
         rescue NoMethodError
           nil
         end

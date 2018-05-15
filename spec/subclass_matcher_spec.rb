@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-# rubocop:disable Metrics/BlockLength
 
 Struct.new('SingleAssociated', :id, :type)
 test_single_associated = Struct::SingleAssociated.new(3, :foo)
@@ -27,9 +26,10 @@ end
 test_instance =
   TestInstance.new(1, 'John', 'Johnson', test_many_associated, test_single_associated)
 
+# rubocop:disable Metrics/BlockLength
 class ExampleMatcher < JsonRspecMatchMaker::Base
   COMPLEX_MATCH_DEF = {
-    'id' => ->(instance) { instance.id },
+    'testy.id' => ->(instance) { instance.id },
     'name' => ->(instance) { instance.full_name },
     'non.existant.nested.key.value' => ->(_) { nil },
     'single_association.id' => :default,
@@ -53,7 +53,7 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
   }.freeze
 
   SIMPLE_MATCH_DEF = [
-    'id',
+    'testy.id',
     { 'name' => ->(instance) { instance.full_name } },
     'non.existant.key.value',
     'single_association.id',
@@ -81,14 +81,18 @@ end
 
 RSpec.shared_examples 'json matcher' do |type|
   if type == :simple
-    let(:matcher) { ExampleMatcher.new(test_instance, ExampleMatcher::SIMPLE_MATCH_DEF) }
+    let(:matcher) do
+      ExampleMatcher.new(test_instance, ExampleMatcher::SIMPLE_MATCH_DEF, prefix: 'testy')
+    end
   else
-    let(:matcher) { ExampleMatcher.new(test_instance, ExampleMatcher::COMPLEX_MATCH_DEF) }
+    let(:matcher) do
+      ExampleMatcher.new(test_instance, ExampleMatcher::COMPLEX_MATCH_DEF, prefix: 'testy')
+    end
   end
 
   let(:matching_json) do
     {
-      'id' => test_instance.id,
+      'testy' => { 'id' => test_instance.id },
       'name' => test_instance.full_name,
       'single_association' => {
         'id' => test_single_associated.id,
