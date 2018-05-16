@@ -62,18 +62,19 @@ module JsonRspecMatchMaker
         if key.is_a? String
           result[key] = :default
         elsif key.is_a? Hash
-          result.merge!(expand_sub_definition(key))
+          result.merge!(expand_sub_definitions(key))
         end
       end
     end
 
     # expands nested simple definition into a full hash
     # @api private
-    def expand_sub_definition(sub_definition)
-      subkey = sub_definition.keys.first
-      return sub_definition if sub_definition[subkey].respond_to? :call
-      sub_definition[subkey][:attributes] = expand_definition(sub_definition[subkey][:attributes])
-      sub_definition
+    def expand_sub_definitions(sub_definitions)
+      sub_definitions.each_with_object({}) do |(subkey, value), result|
+        result[subkey] = value
+        next if value.respond_to? :call
+        result[subkey][:attributes] = expand_definition(value[:attributes])
+      end
     end
 
     # Walks through the match definition, collecting errors for each field
@@ -119,11 +120,6 @@ module JsonRspecMatchMaker
     #   a function returning the value for the key for the object being serialized
     # @param expected_instance [Object]
     #   the top level instance, or an each instance from #check_each
-    # @param each_opts [nil, Hash]
-    #  nil if checking a top level value
-    #  Hash if iterating through a list
-    #    :idx the current index
-    #    :error_key the subfield reported in the error
     # the index if iterating through a list, otherwise nil
     # @return [nil] returns nothing, adds to error list as side effect
     def check_values(key_prefix, error_key, match_function, expected_instance = expected)

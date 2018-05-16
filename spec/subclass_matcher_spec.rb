@@ -54,27 +54,22 @@ class ExampleMatcher < JsonRspecMatchMaker::Base
 
   SIMPLE_MATCH_DEF = [
     'testy.id',
-    { 'name' => ->(instance) { instance.full_name } },
     'non.existant.key.value',
     'single_association_attributes.id',
     'single_association_attributes.type',
-    {
-      'many_association' => {
-        each: ->(instance) { instance.many_association },
-        attributes: [
-          'id',
-          'description',
-          'something_else.id',
-          'something_else.type',
-          'more_things' => {
-            each: ->(instance) { instance.more_things },
-            attributes: %w[
-              id
-              type
-            ]
-          }
-        ]
-      }
+    'name' => ->(instance) { instance.full_name },
+    'many_association' => {
+      each: ->(instance) { instance.many_association },
+      attributes: [
+        'id',
+        'description',
+        'something_else.id',
+        'something_else.type',
+        'more_things' => {
+          each: ->(instance) { instance.more_things },
+          attributes: %w[id type]
+        }
+      ]
     }
   ].freeze
 end
