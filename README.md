@@ -1,129 +1,15 @@
 # JsonRspecMatchMaker
 
-Write RSpec matchers for JSON api endpoints using a simple data structure.
+Helper class for writing custom RSpec matchers for JSON api endpoints.
+
 DRY up API expectations, without losing the specificity sacrificed by a
-schema-based approach to JSON expectations.
-
-## Why?
-
-As pointed out by Thoughbot in their blog post [Validating JSON Schemas with an
-RSpec
-Matcher](https://robots.thoughtbot.com/validating-json-schemas-with-an-rspec-matcher)
-the naive pattern for writing request specs for a JSON API in rails tends to
-look something like:
-
-```ruby
-describe "Fetching the current user" do
-  context "with valid auth token" do
-    it "returns the current user" do
-      user = create(:user)
-      auth_header = { "Auth-Token" => user.auth_token }
-
-      get v1_current_user_url, {}, auth_header
-
-      current_user = response_body["user"]
-      expect(response.status).to eq 200
-      expect(current_user["auth_token"]).to eq user.auth_token
-      expect(current_user["email"]).to eq user.email
-      expect(current_user["first_name"]).to eq user.first_name
-      expect(current_user["last_name"]).to eq user.last_name
-      expect(current_user["id"]).to eq user.id
-      expect(current_user["phone_number"]).to eq user.phone_number
-    end
-  end
-
-  def response_body
-    JSON.parse(response.body)
-  end
-end
-```
-
-Tedious to write and just as tedious to read.
-
-In that post, they talk about one alternative for making tests around JSON
-better - JSON Schema. This is an interesting approach, but I'd like to be more
-specific about my specs than validating that the shape of the data and the types
-of the values are correct.
-
-However, I do like the way that the JSON schema is written because it is very
-similar to the JSON that's generated. So that's the goal - enable writing spec
-matchers similar to a JSON schema definition but with greater specificity about values.
-
-I think this gem accomplishes that. As an example, here is a JSON Schema
-defintion (also pulled from the Thoughbot blog post)
-
-```json
-{
-  "type": "object",
-  "required": ["user"],
-  "properties": {
-    "user" : {
-      "type" : "object",
-      "required" : [
-        "auth_token",
-        "email",
-        "first_name",
-        "id",
-        "last_name",
-        "phone_number"
-      ],
-      "properties" : {
-        "auth_token" : { "type" : "string" },
-        "created_at" : { "type" : "string", "format": "date-time" },
-        "email" : { "type" : "string" },
-        "first_name" : { "type" : "string" },
-        "id" : { "type" : "integer" },
-        "last_name" : { "type" : "string" },
-        "phone_number" : { "type" : "string" },
-        "updated_at" : { "type" : "string", "format": "date-time" }
-      }
-    }
-  }
-}
-```
-
-And here is what the interesting bits of a matcher using this gem would look
-like for the same case:
-
-```ruby
-{
-  'user.auth_token' =>   ->(user) { user.auth_token },
-  'user.created_at' =>   ->(user) { user.created_at },
-  'user.email' =>        ->(user) { user.email },
-  'user.first_name' =>   ->(user) { user.first_name },
-  'user.id' =>           ->(user) { user.id },
-  'user.last_name' =>    ->(user) { user.last_name }
-  'user.phone_number' => ->(user) { user.phone_number },
-  'user.updated_at' =>   ->(user) { user.updated_at }
-}
-```
-
-Then that matcher can be used to make your specs:
-
-```ruby
-describe "Fetching the current user" do
-  context "with valid auth token" do
-    it "returns the current user" do
-      user = create(:user)
-      auth_header = { "Auth-Token" => user.auth_token }
-
-      get v1_current_user_url, {}, auth_header
-
-      expect(response_body).to be_valid_json_for_user(user)
-    end
-  end
-
-  def response_body
-    JSON.parse(response.body)
-  end
-end
-```
+schema-based approach.
 
 ## Installation with Rails
 
 Add this line to your application's Gemfile:
 
-```ruby
+```
 gem 'json_rspec_match_maker', require: false
 ```
 
@@ -133,7 +19,7 @@ And then execute:
     
 Update your `rails_helper.rb` with:
 
-```ruby
+```
 # require the gem
 require 'json_rspec_match_maker'
 
@@ -145,115 +31,118 @@ end
 
 ## Usage
 
-Create a new matcher that interhits from the base class:
+Matchers are instantiated with some object and a match definition.
 
-```ruby
-class AddressMatcher < JsonRspecMatchMaker::Base
+If our address class looks like:
+
+```
+class Address
+  attr_reader :street1, :street2, :city, :state, :zip
 end
 ```
 
-A child class just needs to define and set the `@match_definition` 
+And we serialize that into JSON like:
 
-```ruby
-class AddressMatcher < JsonRspecMatchMaker::Base
-  def initialize(address)
-    @match_definition = set_match_def
-    super
+```
+{
+  address: {
+    street1: '18 Streety Street',
+    street2: 'APT 22B',
+    city: 'Citytown',
+    state: 'NY',
+    zip: '11111'
+  }
+}
+```
+
+Then we can define a matcher like:
+
+```
+module JsonMatchers
+  def be_valid_json_for_address(address)
+    JsonRspecMatchMaker::Base.new(address, %w[street1 street2 city state zip], prefix: 'address')
   end
 end
 ```
 
-Matchers need to be wrapped in a module we can include in our specs:
+And use it in a spec like:
 
-```ruby
+```
+describe 'my api', type: :request do
+  let(:test_address) { Address.new('Street', '2', 'Place', 'ZZ', '00000') }
+  it 'gets some stuff' do
+    get '/api/address'
+    expect(JSON.parse(response.body)).to be_valid_json_for_address(test_address)
+  end
+end
+```
+
+You can also pass a custom Proc to override the methods called to fetch the value for a key:
+(these need to be last in the array - taking advantage of ruby sytanx sugar omitting surrounding brackets)
+
+```
+match = [
+  'id',
+  'name' => ->(object) { object.full_name }
+]
+```
+
+Single nested objects are simple:
+
+```
+match = [
+  'user.address.street1'
+]
+```
+
+Nested lists have one extra step
+:each should be a proc that fetches the list to iterate through
+:attributes should be another definition, following same rules as the outer one
+
+```
+match = [
+  'id',
+  'name',
+  'photographs_attributes' => {
+    each: -> (object) { object.photographs.visible },
+    attributes: %w[id caption url]
+  }
+]
+```
+
+You may want to break out more complicated definitions into their own class:
+
+```
 module JsonMatchers
   class AddressMatcher < JsonRspecMatchMaker::Base
-    ...
+    MATCH = %w[street1 street2 city state zip].freeze
+    
+    def initialize(address)
+      super(address, MATCH, prefix: 'address')
+    end
   end
-end
-```
 
-That module defines our match method:
-
-```ruby
-module JsonMatchers
-  # class defined up here...
-  
   def be_valid_json_for_address(address)
     AddressMatcher.new(address)
   end
 end
 ```
 
-Which we can then use in RSpec like:
-
-```ruby
-RSpec.describe 'Address serialization' do
-  include JsonMatchers
-
-  let(:address) { Address.new }
-  let(:address_json) { address.to_json }
-  
-  it 'serializes the address' do
-    expect(address_json).to be_valid_json_for_address(address)
-  end
-end
-```
-
-Here is an example of a complete matcher class:
-
-```ruby
-class AddressMatcher < JsonRspecMatchMaker::Base
-  MATCH_DEF = {
-    'id' => ->(instance) { instance.id },
-    'description' => ->(instance) { instance.description },
-    'street_line_one' => ->(instance) { instance.street_line_one },
-    'street_line_two' => ->(instance) { instance.street_line_two },
-    'city' => ->(instance) { instance.city },
-    'state' => ->(instance) { instance.state.abbreviation },
-    'postal_code' => ->(instance) { instance.postal_code },
-  }.freeze
-
-  def initialize(address)
-    @match_definition = MATCH_DEF
-    super
-  end
-end
-```
-
-In that cause, our expectations are static so we can define the match definition
-as a constant.
-
-In other cases, we might want our matchers to be more dynamic so we could do
-something like:
+You might want your matchers to be more dynamic so you could do something like:
 
 ```ruby
 class AddressMatcher < JsonRspecMatchMaker::Base
   def initialize(address, state_format)
-    @match_definition = set_match_def(state_format)
-    super(address)
+    match_definition = set_match_def(state_format)
+    super(address, match_definition)
   end
   
   def set_match_def(state_format)
-    {
+    [
       'state' => ->(instance) { instance.state.formatted(state_format) }
-    }.merge(MATCH_DEF)
+    ]
   end
 end
-```
-
-Arrays are defined very similary to single objects:
-
-```ruby
-{
-  'answers' => {
-    each: ->(instance) { instance.answers },
-    attributes: {
-      'id' => ->(answer) { answer.id },
-      'question' => ->(answer) { answer.question.text },
-    }
-  }
-}
 ```
 
 ## Development
