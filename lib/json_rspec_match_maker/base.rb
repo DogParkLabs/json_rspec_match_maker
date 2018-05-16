@@ -21,9 +21,11 @@ module JsonRspecMatchMaker
     # Create a new JSON matcher
     # @api public
     # @param expected [Object] The object being serialized into JSON
+    # @param match_definition [Array<String,Hash>,Hash]
+    # @param prefix [String] a key prefix on the json object
     # @example
-    #   JsonRspecMatchMaker.new(active_record_model)
-    #   JsonRspecMatchMaker.new(presenter_instance)
+    #   JsonRspecMatchMaker.new(model, %w[id name type], prefix: 'class_name')
+    #   JsonRspecMatchMaker.new(model, { 'name' => ->(m) { m.full_name } })
     def initialize(expected, match_definition, prefix: '')
       @expected = expected
       @match_definition = expand_definition(match_definition)
@@ -39,7 +41,7 @@ module JsonRspecMatchMaker
     #   JsonRspecMatchMaker.new(dog).matches?(cat.to_json) #=> false
     def matches?(target)
       @target = target
-      check_target_against_expected
+      check_definition(match_definition, expected)
       @errors.empty?
     end
 
@@ -56,6 +58,8 @@ module JsonRspecMatchMaker
 
     # expands simple arrays into full hash definitions
     # @api private
+    # @param definition [Array<String,Hash>]
+    # @return [Hash]
     def expand_definition(definition)
       return definition if definition.is_a? Hash
       definition.each_with_object({}) do |key, result|
@@ -69,6 +73,8 @@ module JsonRspecMatchMaker
 
     # expands nested simple definition into a full hash
     # @api private
+    # @param definition [Hash]
+    # @return [Hash]
     def expand_sub_definitions(sub_definitions)
       sub_definitions.each_with_object({}) do |(subkey, value), result|
         result[subkey] = value
@@ -79,12 +85,10 @@ module JsonRspecMatchMaker
 
     # Walks through the match definition, collecting errors for each field
     # @api private
-    # @raise [MatchDefinitionNotFound] if child class does not set @match_definition
+    # @param definition [Hash] defines how to lookup value in json and on object
+    # @param current_expected [Object] the serialized object being checked
+    # @current_key [String,nil] optional parent key passed while checking nested definitions
     # @return [nil] returns nothing, adds to error list as side effect
-    def check_target_against_expected
-      check_definition(@match_definition, expected)
-    end
-
     def check_definition(definition, current_expected, current_key = nil)
       definition.each do |error_key, match_def|
         if match_def.is_a? Hash
@@ -115,6 +119,7 @@ module JsonRspecMatchMaker
 
     # Checks fields on a single instance
     # @api private
+    # @param key_prefix [String] optional parent key if iterating through nested association
     # @param error_key [String] the name of the field reported in the error
     # @param match_function [Hash]
     #   a function returning the value for the key for the object being serialized
