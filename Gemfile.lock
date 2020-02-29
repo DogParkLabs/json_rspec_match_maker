@@ -13,7 +13,7 @@ GEM
       ast (~> 2.4.0)
     powerpack (0.1.1)
     rainbow (3.0.0)
-    rake (10.5.0)
+    rake (13.0.1)
     rspec (3.7.0)
       rspec-core (~> 3.7.0)
       rspec-expectations (~> 3.7.0)
@@ -46,7 +46,7 @@ PLATFORMS
 DEPENDENCIES
   bundler (~> 1.16)
   json_rspec_match_maker!
-  rake (~> 10.0)
+  rake (~> 13.0)
   rspec (~> 3.7.0)
   rubocop (~> 0.52.1)
   yard (~> 0.9.12)
